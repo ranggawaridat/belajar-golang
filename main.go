@@ -7,21 +7,13 @@ import (
 	"strconv"
 )
 
-func main() {
-
-	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("pong"))
-	})
-
-	http.HandleFunc("/users", usersHandler)
-
-	fmt.Println("Server running on :8080")
-	http.ListenAndServe(":8080", nil)
-}
-
 type User struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
+}
+
+type ErrorResponse struct {
+	Error string `json:"error"`
 }
 
 func usersHandler(w http.ResponseWriter, r *http.Request) {
@@ -41,7 +33,11 @@ func usersHandler(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(paramID)
 	if err != nil {
-		http.Error(w, "id must be a number", http.StatusBadRequest)
+		errResp := ErrorResponse{
+			Error: "id must be a number",
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(errResp)
 		return
 	}
 
@@ -52,5 +48,21 @@ func usersHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	http.Error(w, "user not found", http.StatusNotFound)
+	w.WriteHeader(http.StatusNotFound)
+	errResp := ErrorResponse{
+		Error: "user not found",
+	}
+	json.NewEncoder(w).Encode(errResp)
+}
+
+func main() {
+
+	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("pong"))
+	})
+
+	http.HandleFunc("/users", usersHandler)
+
+	fmt.Println("Server running on :8080")
+	http.ListenAndServe(":8080", nil)
 }
